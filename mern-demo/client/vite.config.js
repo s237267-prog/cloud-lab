@@ -5,9 +5,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 3000,
     proxy: {
-      '/api': 'http://localhost:5000'
+      '/api': {
+        target: 'http://mern-backend:5000',
+        changeOrigin: true,
+        secure: false
+      }
     }
   }
 })
