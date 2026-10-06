@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const API_BASE = 'https://musical-train-qv95rrwjqqggh46jj-5000.app.github.dev/api/students';
 
 function App() {
   const [students, setStudents] = useState([]);
@@ -7,18 +9,14 @@ function App() {
   const [email, setEmail] = useState('');
   const [editingId, setEditingId] = useState(null);
 
-  // Lấy domain hiện tại của Codespaces và đổi từ port 3000 sang 5000
-  const API_BASE = window.location.origin.replace('-3000', '-5000');
-
   const fetchStudents = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/students`);
-      if (res.ok) {
-        const data = await res.json();
-        setStudents(data);
-      }
+      const res = await fetch(API_BASE);
+      if (!res.ok) throw new Error('API Error');
+      const data = await res.json();
+      setStudents(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Lỗi tải danh sách:', err);
+      console.error('Lỗi khi tải danh sách:', err);
     }
   };
 
@@ -28,24 +26,27 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const url = editingId ? `${API_BASE}/api/students/${editingId}` : `${API_BASE}/api/students`;
-    const method = editingId ? 'PUT' : 'POST';
-
     try {
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mssv, name, email }),
-      });
-      if (res.ok) {
-        setMssv(''); setName(''); setEmail(''); setEditingId(null);
-        fetchStudents();
+      if (editingId) {
+        await fetch(`${API_BASE}/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mssv, name, email })
+        });
+        setEditingId(null);
       } else {
-        const errData = await res.json();
-        alert('Lỗi từ Server: ' + (errData.error || 'Không thêm được'));
+        await fetch(API_BASE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mssv, name, email })
+        });
       }
+      setMssv('');
+      setName('');
+      setEmail('');
+      fetchStudents();
     } catch (err) {
-      alert('Lỗi kết nối API: ' + err.message);
+      alert('Lỗi kết nối Backend!');
     }
   };
 
@@ -59,7 +60,7 @@ function App() {
   const handleDelete = async (id) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa sinh viên này?')) return;
     try {
-      const res = await fetch(`${API_BASE}/api/students/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
       if (res.ok) fetchStudents();
     } catch (err) {
       alert('Lỗi khi xóa');
@@ -67,29 +68,31 @@ function App() {
   };
 
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: 'auto', color: '#fff', fontFamily: 'sans-serif' }}>
-      <h2>Quản lý Sinh viên (MERN Stack Full CRUD)</h2>
+    <div style={{ padding: '20px', maxWidth: '800px', margin: 'auto', color: '#000000', fontFamily: 'sans-serif' }}>
+      <h2 style={{ textAlign: 'center', color: '#000000' }}>Quản lý Sinh viên - MERN Stack (v2.0)</h2>
       <form onSubmit={handleSubmit} style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-        <input placeholder="MSSV" value={mssv} onChange={e => setMssv(e.target.value)} required style={{ padding: '8px' }} />
-        <input placeholder="Họ tên" value={name} onChange={e => setName(e.target.value)} required style={{ padding: '8px' }} />
-        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required style={{ padding: '8px' }} />
-        <button type="submit" style={{ padding: '8px 16px', cursor: 'pointer' }}>
+        <input placeholder="MSSV" value={mssv} onChange={e => setMssv(e.target.value)} required style={{ padding: '8px', flex: 1, color: '#000', backgroundColor: '#fff', border: '1px solid #ccc' }} />
+        <input placeholder="Họ tên" value={name} onChange={e => setName(e.target.value)} required style={{ padding: '8px', flex: 1, color: '#000', backgroundColor: '#fff', border: '1px solid #ccc' }} />
+        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required style={{ padding: '8px', flex: 1, color: '#000', backgroundColor: '#fff', border: '1px solid #ccc' }} />
+        <button type="submit" style={{ padding: '8px 16px', cursor: 'pointer', color: '#000', fontWeight: 'bold' }}>
           {editingId ? 'Cập nhật' : 'Thêm Sinh viên'}
         </button>
-        {editingId && <button onClick={() => { setEditingId(null); setMssv(''); setName(''); setEmail(''); }}>Hủy</button>}
+        {editingId && <button onClick={() => { setEditingId(null); setMssv(''); setName(''); setEmail(''); }} style={{ color: '#000' }}>Hủy</button>}
       </form>
 
-      <h3>Danh sách Sinh viên</h3>
+      <h3 style={{ color: '#000000' }}>Danh sách Sinh viên</h3>
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {students.length === 0 ? (
-          <li>Chưa có sinh viên nào trong danh sách.</li>
+          <li style={{ color: '#000000', fontStyle: 'italic' }}>Không có sinh viên trong danh sách.</li>
         ) : (
-          students.map((s) => (
-            <li key={s._id} style={{ padding: '10px 0', borderBottom: '1px solid #444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span><strong>{s.mssv}</strong> - {s.name} - <em>{s.email}</em></span>
+          students.map(s => (
+            <li key={s._id} style={{ padding: '10px 0', borderBottom: '1px solid #ccc', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#000000' }}>
+              <span style={{ color: '#000000', fontWeight: 'bold' }}>
+                {s.mssv} - {s.name} - <span style={{ color: '#000000', fontStyle: 'italic', fontWeight: 'normal' }}>{s.email}</span>
+              </span>
               <div>
-                <button onClick={() => handleEdit(s)} style={{ marginRight: '5px' }}>Sửa</button>
-                <button onClick={() => handleDelete(s._id)}>Xóa</button>
+                <button onClick={() => handleEdit(s)} style={{ marginRight: '5px', padding: '4px 8px', cursor: 'pointer', color: '#000' }}>Sửa</button>
+                <button onClick={() => handleDelete(s._id)} style={{ padding: '4px 8px', cursor: 'pointer', color: '#000' }}>Xóa</button>
               </div>
             </li>
           ))
