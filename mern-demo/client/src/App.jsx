@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const API_BASE = 'https://musical-train-qv95rrwjqqggh46jj-5000.app.github.dev/api/students';
+const API_BASE = '/api/students';
 
 function App() {
   const [students, setStudents] = useState([]);

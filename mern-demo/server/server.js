@@ -4,9 +4,12 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+
+// 1. Cấu hình CORS mở rộng cho phép kết nối cross-domain từ Frontend
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
+// 2. Kết nối CSDL MongoDB Atlas
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
@@ -17,6 +20,7 @@ if (!MONGODB_URI) {
     .catch(err => console.error('MongoDB connection error:', err));
 }
 
+// 3. Khai báo Schema và Model
 const studentSchema = new mongoose.Schema({
   mssv: { type: String, required: true },
   name: { type: String, required: true },
@@ -25,6 +29,18 @@ const studentSchema = new mongoose.Schema({
 
 const Student = mongoose.model('Student', studentSchema);
 
+// 4. Endpoint Health Check phục vụ Cloud Monitoring & Rolling Updates
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'UP',
+    timestamp: new Date(),
+    uptime: process.uptime()
+  });
+});
+
+// 5. Các Endpoint CRUD (Hỗ trợ cả tiền tố /api/students và /students)
+
+// GET: Lấy danh sách sinh viên
 app.get(['/api/students', '/students'], async (req, res) => {
   try {
     const students = await Student.find();
@@ -34,6 +50,7 @@ app.get(['/api/students', '/students'], async (req, res) => {
   }
 });
 
+// POST: Thêm sinh viên mới
 app.post(['/api/students', '/students'], async (req, res) => {
   try {
     const { mssv, name, email } = req.body;
@@ -45,6 +62,7 @@ app.post(['/api/students', '/students'], async (req, res) => {
   }
 });
 
+// PUT: Cập nhật thông tin sinh viên
 app.put(['/api/students/:id', '/students/:id'], async (req, res) => {
   try {
     const { mssv, name, email } = req.body;
@@ -55,6 +73,7 @@ app.put(['/api/students/:id', '/students/:id'], async (req, res) => {
   }
 });
 
+// DELETE: Xóa sinh viên
 app.delete(['/api/students/:id', '/students/:id'], async (req, res) => {
   try {
     await Student.findByIdAndDelete(req.params.id);
@@ -64,5 +83,6 @@ app.delete(['/api/students/:id', '/students/:id'], async (req, res) => {
   }
 });
 
+// 6. Khởi chạy Server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
